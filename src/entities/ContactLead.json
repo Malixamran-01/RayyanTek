@@ -1,0 +1,38 @@
+{
+    "name": "ContactLead",
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Client name"
+      },
+      "email": {
+        "type": "string",
+        "description": "Client email address"
+      },
+      "company": {
+        "type": "string",
+        "description": "Company name"
+      },
+      "message": {
+        "type": "string",
+        "description": "Client message or inquiry"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "new",
+          "contacted",
+          "qualified",
+          "closed"
+        ],
+        "default": "new",
+        "description": "Lead status"
+      }
+    },
+    "required": [
+      "name",
+      "email",
+      "message"
+    ]
+  }
