@@ -23,6 +23,7 @@ import HeroSection from "../components/home/HeroSection";
 import SkewedAnimatedRow from "../components/home/SkewedRows";
 import ServicesPreview from "../components/home/ServicesPreview";
 import FeaturedProjects from "../components/home/FeaturedProjects";
+import TechnologiesSection from "../components/home/TechnologiesSection";
 import TestimonialsSection from "../components/home/TetsimonialSection";
 import PricingPreview from "../components/home/PricingPreview";
 import ScrollytellingSection from "../components/home/ScrollytellingSection";
@@ -47,7 +48,22 @@ export default function HomePage() {
       
       <ServicesPreview />
       <ScrollytellingSection />
+      
+      {/* Second Skewed Animated Row */}
+      <div className="relative">
+        <SkewedAnimatedRow 
+          text=" CREATIVE SOLUTIONS • TECHNICAL EXCELLENCE • INNOVATIVE APPROACH • DELIVERING RESULTS • "
+          direction="left" 
+          speed={50}
+          backgroundColor="#000000"
+          textColor="#bfa45a"
+          skew="skew-y-1"
+          border={false}
+        />
+      </div>
+      
       <FeaturedProjects />
+      <TechnologiesSection />
       <TestimonialsSection />
       <PricingPreview />
 

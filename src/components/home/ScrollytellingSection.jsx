@@ -74,8 +74,8 @@ export default function ScrollytellingSection() {
       },
       {
         root: null,
-        rootMargin: '-20% 0px -20% 0px',
-        threshold: 0.5
+        rootMargin: '-10% 0px -10% 0px',
+        threshold: 0.3
       }
     );
 
@@ -83,10 +83,33 @@ export default function ScrollytellingSection() {
       if (ref) observer.observe(ref);
     });
 
+    // Additional scroll listener for more responsive updates
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+      
+      stepRefs.current.forEach((ref, index) => {
+        if (ref) {
+          const rect = ref.getBoundingClientRect();
+          const elementTop = rect.top + scrollY;
+          const elementCenter = elementTop + rect.height / 2;
+          const viewportCenter = scrollY + windowHeight / 2;
+          
+          // If element center is within 200px of viewport center, make it active
+          if (Math.abs(elementCenter - viewportCenter) < 200) {
+            setActiveStep(index);
+          }
+        }
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
     return () => {
       stepRefs.current.forEach((ref) => {
         if (ref) observer.unobserve(ref);
       });
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
@@ -113,7 +136,7 @@ export default function ScrollytellingSection() {
                   key={step.id}
                   ref={(el) => (stepRefs.current[index] = el)}
                   data-step={index}
-                  className="relative min-h-screen flex items-center py-20"
+                  className="relative min-h-[80vh] flex items-center py-16"
                 >
                   <div className="ml-12">
                     <div className="text-[#2a0d0f] text-sm font-medium mb-2">
