@@ -59,56 +59,36 @@ const steps = [
 
 export default function ScrollytellingSection() {
   const [activeStep, setActiveStep] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const stepRefs = useRef([]);
   const sectionRef = useRef(null);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const index = parseInt(entry.target.getAttribute('data-step'));
-            setActiveStep(index);
-          }
-        });
-      },
-      {
-        root: null,
-        rootMargin: '-10% 0px -10% 0px',
-        threshold: 0.3
-      }
-    );
-
-    stepRefs.current.forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
-
-    // Additional scroll listener for more responsive updates
     const handleScroll = () => {
-      const scrollY = window.scrollY;
+      if (!sectionRef.current) return;
+      
+      const sectionRect = sectionRef.current.getBoundingClientRect();
+      const sectionTop = sectionRect.top;
+      const sectionHeight = sectionRect.height;
       const windowHeight = window.innerHeight;
       
-      stepRefs.current.forEach((ref, index) => {
-        if (ref) {
-          const rect = ref.getBoundingClientRect();
-          const elementTop = rect.top + scrollY;
-          const elementCenter = elementTop + rect.height / 2;
-          const viewportCenter = scrollY + windowHeight / 2;
-          
-          // If element center is within 200px of viewport center, make it active
-          if (Math.abs(elementCenter - viewportCenter) < 200) {
-            setActiveStep(index);
-          }
-        }
-      });
+      // Calculate scroll progress within the section (0 to 1)
+      const scrollProgress = Math.max(0, Math.min(1, -sectionTop / (sectionHeight - windowHeight)));
+      setScrollProgress(scrollProgress);
+      
+      // Calculate which step should be active based on scroll position
+      const totalSteps = steps.length;
+      const stepProgress = scrollProgress * (totalSteps - 1);
+      const currentStepIndex = Math.floor(stepProgress);
+      const stepTransitionProgress = stepProgress - currentStepIndex;
+      
+      setActiveStep(currentStepIndex);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial call
 
     return () => {
-      stepRefs.current.forEach((ref) => {
-        if (ref) observer.unobserve(ref);
-      });
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
@@ -131,59 +111,136 @@ export default function ScrollytellingSection() {
               {/* Timeline line */}
               <div className="absolute left-8 top-0 bottom-0 w-[2px] bg-[#bfa45a]/20" />
               
-              {steps.map((step, index) => (
-                <div
-                  key={step.id}
-                  ref={(el) => (stepRefs.current[index] = el)}
-                  data-step={index}
-                  className="relative min-h-[80vh] flex items-center py-16"
-                >
-                  <div className="ml-12">
-                    <div className="text-[#2a0d0f] text-sm font-medium mb-2">
-                      {step.subtitle}
+              {steps.map((step, index) => {
+                const totalSteps = steps.length;
+                const stepProgress = scrollProgress * (totalSteps - 1);
+                const currentStepIndex = Math.floor(stepProgress);
+                const stepTransitionProgress = stepProgress - currentStepIndex;
+                
+                // Calculate opacity and scale for smooth text transitions
+                let textOpacity = 0.3;
+                let textScale = 0.95;
+                let isActive = false;
+                
+                if (index === currentStepIndex) {
+                  // Current step - fully visible
+                  textOpacity = 1;
+                  textScale = 1;
+                  isActive = true;
+                } else if (index === currentStepIndex + 1) {
+                  // Next step - becoming visible
+                  textOpacity = 0.3 + stepTransitionProgress * 0.7;
+                  textScale = 0.95 + stepTransitionProgress * 0.05;
+                } else if (index === currentStepIndex - 1) {
+                  // Previous step - fading out
+                  textOpacity = 1 - (1 - stepTransitionProgress) * 0.7;
+                  textScale = 1 - (1 - stepTransitionProgress) * 0.05;
+                }
+                
+                return (
+                  <div
+                    key={step.id}
+                    ref={(el) => (stepRefs.current[index] = el)}
+                    data-step={index}
+                    className="relative min-h-[80vh] flex items-center py-16"
+                    style={{
+                      opacity: textOpacity,
+                      transform: `scale(${textScale})`,
+                      transition: 'opacity 0.1s ease-out, transform 0.1s ease-out'
+                    }}
+                  >
+                    <div className="ml-12">
+                      <div className="text-[#2a0d0f] text-sm font-medium mb-2">
+                        {step.subtitle}
+                      </div>
+                      <h3 className={clsx(
+                        "text-4xl md:text-6xl font-bold mb-4 transition-colors duration-300",
+                        isActive ? "text-[#bfa45a]" : "text-white"
+                      )}>
+                        {step.title}
+                      </h3>
+                      <p className="text-[#bfa45a]/80 text-lg md:text-xl max-w-xl leading-relaxed">
+                        {step.description}
+                      </p>
                     </div>
-                    <h3 className={clsx(
-                      "text-4xl md:text-6xl font-bold mb-4 transition-colors duration-500",
-                      activeStep === index ? "text-[#bfa45a]" : "text-white"
-                    )}>
-                      {step.title}
-                    </h3>
-                    <p className="text-[#bfa45a]/80 text-lg md:text-xl max-w-xl leading-relaxed">
-                      {step.description}
-                    </p>
+                    
+                    {/* Active dot */}
+                    <div className={clsx(
+                      "absolute left-6 w-4 h-4 rounded-full transition-all duration-300",
+                      isActive 
+                        ? "bg-[#bfa45a] ring-4 ring-black scale-125" 
+                        : "bg-[#bfa45a]/20 scale-100"
+                    )} />
                   </div>
-                  
-                  {/* Active dot */}
-                  <div className={clsx(
-                    "absolute left-6 w-4 h-4 rounded-full transition-all duration-500",
-                    activeStep === index 
-                      ? "bg-[#bfa45a] ring-4 ring-black scale-125" 
-                      : "bg-[#bfa45a]/20 scale-100"
-                  )} />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           {/* Right Column - Sticky Image Frame */}
           <div className="md:col-span-6">
             <div className="sticky top-0 h-screen flex items-center justify-center">
-              <div className="image-frame relative w-[90%] max-w-[680px] h-[70vh] rounded-[9999px] overflow-hidden shadow-2xl border border-[#bfa45a]/20 bg-[#2a0d0f]">
+              <div className="image-frame relative w-[90%] max-w-[400px] h-[80vh] overflow-hidden shadow-2xl border border-[#bfa45a]/20 bg-[#2a0d0f]"
+                   style={{ borderRadius: "50% / 30%" }}>
+                
+                {/* Calculate stacking image transitions */}
                 {steps.map((step, index) => {
-                  const isActive = activeStep === index;
-                  const isNext = activeStep === index - 1;
-                  const isPrevious = activeStep === index + 1;
+                  const totalSteps = steps.length;
+                  const stepProgress = scrollProgress * (totalSteps - 1);
+                  const currentStepIndex = Math.floor(stepProgress);
+                  const stepTransitionProgress = stepProgress - currentStepIndex;
+                  
+                  // Calculate position for stacking transitions
+                  let translateY = 0;
+                  let opacity = 0;
+                  let zIndex = 0;
+                  let scale = 1;
+                  
+                  if (index <= currentStepIndex) {
+                    // Current and previous steps - visible and stacked
+                    if (index === currentStepIndex) {
+                      // Current step - fully visible on top
+                      translateY = 0;
+                      opacity = 1;
+                      zIndex = 20 + index;
+                      scale = 1;
+                    } else if (index === currentStepIndex - 1) {
+                      // Previous step - slightly behind current
+                      translateY = 0;
+                      opacity = 0.8;
+                      zIndex = 20 + index;
+                      scale = 0.98;
+                    } else {
+                      // Older steps - further back in stack
+                      const stackDepth = currentStepIndex - index;
+                      translateY = 0;
+                      opacity = Math.max(0, 0.6 - stackDepth * 0.1);
+                      zIndex = 20 + index;
+                      scale = Math.max(0.9, 1 - stackDepth * 0.02);
+                    }
+                  } else if (index === currentStepIndex + 1) {
+                    // Next step - sliding up from below
+                    translateY = (1 - stepTransitionProgress) * 100;
+                    opacity = 0.7 + stepTransitionProgress * 0.3;
+                    zIndex = 20 + index;
+                    scale = 0.95 + stepTransitionProgress * 0.05;
+                  } else {
+                    // Future steps - below view
+                    translateY = 100;
+                    opacity = 0;
+                    zIndex = 0;
+                    scale = 0.95;
+                  }
                   
                   return (
                     <div
                       key={`img-${step.id}`}
-                      className={clsx(
-                        "absolute inset-0 transition-transform duration-700 ease-out",
-                        isActive && "translate-y-0 z-20",
-                        isNext && "translate-y-full z-10",
-                        isPrevious && "-translate-y-full z-10",
-                        !isActive && !isNext && !isPrevious && "translate-y-full z-0"
-                      )}
+                      className="absolute inset-0 transition-none"
+                      style={{
+                        transform: `translateY(${translateY}%) scale(${scale})`,
+                        opacity: opacity,
+                        zIndex: zIndex
+                      }}
                     >
                       <img
                         src={step.image}
